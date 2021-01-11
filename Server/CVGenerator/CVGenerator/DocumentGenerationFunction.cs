@@ -14,9 +14,9 @@ using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace CVGenerator
 {
-    public static class Function1
+    public static class DocumentGenerationFunction
     {
-        [FunctionName("Function1")]
+        [FunctionName("DocumentGenerationFunction")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req,
             ILogger log)
