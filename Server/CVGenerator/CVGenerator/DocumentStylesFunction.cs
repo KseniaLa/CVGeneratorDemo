@@ -7,6 +7,8 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using CVGenerator.DocumentStylesConfiguration;
+using System.Collections.Generic;
 
 namespace CVGenerator
 {
@@ -19,9 +21,30 @@ namespace CVGenerator
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            
+               var styles = new List<DocStyle> 
+               {
+                    new DocStyle
+                    {
+                         Id = 1, 
+                         Name = "Simple",
+                         Style = new StyleConfig
+                         {
+                              IsStyledHeading = false
+                         }
+                    },
+                    new DocStyle
+                    {
+                         Id = 2,
+                         Name = "Basic",
+                         Style = new StyleConfig
+                         {
+                              IsStyledHeading = true
+                         }
+                    },
+               };
 
-            return new OkObjectResult(null);
+
+            return new OkObjectResult(styles);
         }
     }
 }

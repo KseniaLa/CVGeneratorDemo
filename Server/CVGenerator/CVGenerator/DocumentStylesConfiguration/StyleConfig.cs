@@ -4,7 +4,8 @@ using System.Text;
 
 namespace CVGenerator.DocumentStylesConfiguration
 {
-     class StyleCongig
+     public class StyleConfig
      {
+          public bool IsStyledHeading {get; set;}
      }
 }
