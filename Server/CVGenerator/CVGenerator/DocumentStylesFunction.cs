@@ -12,39 +12,31 @@ using System.Collections.Generic;
 
 namespace CVGenerator
 {
-    public static class DocumentStylesFunction
-    {
-        [FunctionName("DocumentStylesFunction")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
-            ILogger log)
-        {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
-               var styles = new List<DocStyle> 
+     public static class DocumentStylesFunction
+     {
+          [FunctionName("DocumentStylesFunction")]
+          public static IActionResult Run(
+              [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
+              ILogger log)
+          {
+               try
                {
-                    new DocStyle
-                    {
-                         Id = 1, 
-                         Name = "Simple",
-                         Style = new StyleConfig
-                         {
-                              IsStyledHeading = false
-                         }
-                    },
-                    new DocStyle
-                    {
-                         Id = 2,
-                         Name = "Basic",
-                         Style = new StyleConfig
-                         {
-                              IsStyledHeading = true
-                         }
-                    },
-               };
+                    log.LogInformation("Start DocumentStylesFunction execution");
 
+                    var styles = DocStylesStorage.DocStyles;
 
-            return new OkObjectResult(styles);
-        }
-    }
+                    return new OkObjectResult(styles);
+               }
+               catch (Exception ex)
+               {
+                    log.LogError($"Fatal error occurred: {ex}");
+
+                    return new BadRequestObjectResult(ex.Message);
+               }
+               finally
+               {
+                    log.LogInformation("Finish DocumentStylesFunction execution");
+               }
+          }
+     }
 }
