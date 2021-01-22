@@ -11,150 +11,125 @@ namespace CVGenerator.CvGeneration
 {
      public static class DocxGenerator
      {
+          private static readonly string _headingFontColor = "2F5496";
+
           public static byte[] GenerateFileBytes(List<TextItem> textItems, string font, bool hasStyledHeadings, int headingFontSize)
           {
-               using (var mem = new MemoryStream())
+               using var memoryStream = new MemoryStream();
+
+               using (var wordDocument = WordprocessingDocument.Create(memoryStream, WordprocessingDocumentType.Document, true))
                {
-                    using (var wordDocument = WordprocessingDocument.Create(mem, WordprocessingDocumentType.Document, true))
+                    var mainPart = wordDocument.AddMainDocumentPart();
+
+                    mainPart.Document = new Document();
+                    var body = mainPart.Document.AppendChild(new Body());
+
+                    if (hasStyledHeadings)
                     {
-                         var mainPart = wordDocument.AddMainDocumentPart();
+                         var styleRunProperties = new StyleRunProperties();
+                         var fontColor = new Color() { Val = _headingFontColor };
 
-                         mainPart.Document = new Document();
-                         var body = mainPart.Document.AppendChild(new Body());
-
-                         if (hasStyledHeadings)
+                         var fontSize = new FontSize
                          {
-                              var styleRunPropertiesH1 = new StyleRunProperties();
-                              var color1 = new Color() { Val = "2F5496" };
+                              Val = new StringValue((headingFontSize * 2).ToString())
+                         };
 
-                              var fontSize1 = new FontSize
-                              {
-                                   Val = new StringValue((headingFontSize * 2).ToString())
-                              };
-
-                              styleRunPropertiesH1.Append(color1);
-                              styleRunPropertiesH1.Append(fontSize1);
-                              // Check above at the begining of the word creation to check where mainPart come from
-                              AddStyleToDoc(mainPart, "heading1", "heading 1", styleRunPropertiesH1);
-                         }
-
-                         foreach (var textItem in textItems)
-                         {
-                              var p = new Paragraph();
-
-                              var pProps = new ParagraphProperties
-                              {
-                                   Justification = new Justification() { Val = JustificationValues.Start },
-                                   ParagraphStyleId = textItem.IsStyledHeading ? new ParagraphStyleId() { Val = "heading1" } : null,
-                                   SpacingBetweenLines = new SpacingBetweenLines() { After = (textItem.IsHeading ? "0" : "200") },
-                              };
-                              p.Append(pProps);
-
-                              var r1 = new Run();
-                              RunProperties rPr = new RunProperties(
-                               new RunFonts()
-                               {
-                                    Ascii = font
-                               });
-
-                              r1.Append(rPr);
-
-                              if (textItem.IsStyledHeading)
-                              {
-                                   //ParagraphProperties ppH1 = new ParagraphProperties
-                                   //{
-                                   //     ParagraphStyleId = new ParagraphStyleId() { Val = "heading1" },
-                                   //     SpacingBetweenLines = new SpacingBetweenLines() { After = "0" },
-                                   //};
-                                   //p.Append(ppH1);
-                                   Text tH1 = new Text(textItem.Text) { Space = SpaceProcessingModeValues.Preserve };
-                                   r1.Append(tH1);
-                              }
-                              else
-                              {
-                                   var rp1 = new RunProperties
-                                   {
-                                        FontSize = new FontSize { Val = new StringValue((textItem.FontSize * 2).ToString()) },
-                                        Bold = textItem.IsBold ? new Bold() : null
-                                   };
-
-                                   r1.Append(rp1);
-
-                                   Text t1 = new Text(textItem.Text) { Space = SpaceProcessingModeValues.Preserve };
-                                   r1.Append(t1);
-                              }
-
-                              p.Append(r1);
-                              body.Append(p);
-                         }
-
-                         mainPart.Document.Save();
-                         wordDocument.Close();
+                         styleRunProperties.Append(fontColor);
+                         styleRunProperties.Append(fontSize);
+                         AddStyleToDoc(mainPart, "heading1", "heading 1", styleRunProperties);
                     }
 
-                    mem.Seek(0, SeekOrigin.Begin);
-                    return mem.ToArray();
+                    foreach (var textItem in textItems)
+                    {
+                         var paragraph = new Paragraph();
+
+                         var pProps = new ParagraphProperties
+                         {
+                              Justification = new Justification() { Val = JustificationValues.Start },
+                              ParagraphStyleId = textItem.IsStyledHeading ? new ParagraphStyleId() { Val = "heading1" } : null,
+                              SpacingBetweenLines = new SpacingBetweenLines() { After = (textItem.IsHeading ? "0" : "200") },
+                         };
+                         paragraph.Append(pProps);
+
+                         var run = new Run();
+                         var runPropsBase = new RunProperties(new RunFonts() { Ascii = font });
+
+                         run.Append(runPropsBase);
+
+                         if (textItem.IsStyledHeading)
+                         {
+                              var headingText = new Text(textItem.Text) { Space = SpaceProcessingModeValues.Preserve };
+                              run.Append(headingText);
+                         }
+                         else
+                         {
+                              var runProps = new RunProperties
+                              {
+                                   FontSize = new FontSize { Val = new StringValue((textItem.FontSize * 2).ToString()) },
+                                   Bold = textItem.IsBold ? new Bold() : null
+                              };
+
+                              run.Append(runProps);
+
+                              var text = new Text(textItem.Text) { Space = SpaceProcessingModeValues.Preserve };
+                              run.Append(text);
+                         }
+
+                         paragraph.Append(run);
+                         body.Append(paragraph);
+                    }
+
+                    mainPart.Document.Save();
+                    wordDocument.Close();
                }
+
+               memoryStream.Seek(0, SeekOrigin.Begin);
+               return memoryStream.ToArray();
           }
 
-          // Apply a style to a paragraph.
           public static void AddStyleToDoc(MainDocumentPart mainPart, string styleid, string stylename, StyleRunProperties styleRunProperties)
           {
+               var stylePart = mainPart.StyleDefinitionsPart;
 
-               // Get the Styles part for this document.
-               StyleDefinitionsPart part =
-                   mainPart.StyleDefinitionsPart;
-
-               // If the Styles part does not exist, add it and then add the style.
-               if (part == null)
+               if (stylePart == null)
                {
-                    part = AddStylesPartToPackage(mainPart);
-                    AddNewStyle(part, styleid, stylename, styleRunProperties);
+                    stylePart = AddStylesPartToPackage(mainPart);
+                    AddNewStyle(stylePart, styleid, stylename, styleRunProperties);
                }
                else
                {
-                    // If the style is not in the document, add it.
                     if (IsStyleIdInDocument(mainPart, styleid) != true)
                     {
-                         // No match on styleid, so let's try style name.
                          string styleidFromName = GetStyleIdFromStyleName(mainPart, stylename);
                          if (styleidFromName == null)
                          {
-                              AddNewStyle(part, styleid, stylename, styleRunProperties);
+                              AddNewStyle(stylePart, styleid, stylename, styleRunProperties);
                          }
-                         else
-                              styleid = styleidFromName;
                     }
                }
-
           }
 
-          // Add a StylesDefinitionsPart to the document.  Returns a reference to it.
           public static StyleDefinitionsPart AddStylesPartToPackage(MainDocumentPart mainPart)
           {
                StyleDefinitionsPart part;
                part = mainPart.AddNewPart<StyleDefinitionsPart>();
-               DocumentFormat.OpenXml.Wordprocessing.Styles root = new DocumentFormat.OpenXml.Wordprocessing.Styles();
+               var root = new Styles();
                root.Save(part);
                return part;
           }
 
           public static bool IsStyleIdInDocument(MainDocumentPart mainPart, string styleid)
           {
-               // Get access to the Styles element for this document.
-               DocumentFormat.OpenXml.Wordprocessing.Styles s = mainPart.StyleDefinitionsPart.Styles;
+               var stypesPart = mainPart.StyleDefinitionsPart.Styles;
 
-               // Check that there are styles and how many.
-               int n = s.Elements<DocumentFormat.OpenXml.Wordprocessing.Style>().Count();
-               if (n == 0)
-                    return false;
+               var elemCount = stypesPart.Elements<Style>().Count();
+               if (elemCount == 0) return false;
 
-               // Look for a match on styleid.
-               DocumentFormat.OpenXml.Wordprocessing.Style style = s.Elements<DocumentFormat.OpenXml.Wordprocessing.Style>()
+               var style = stypesPart.Elements<Style>()
                    .Where(st => (st.StyleId == styleid) && (st.Type == StyleValues.Paragraph))
                    .FirstOrDefault();
-               if (style == null)
-                    return false;
+               
+               if (style == null) return false;
 
                return true;
           }
@@ -169,14 +144,11 @@ namespace CVGenerator.CvGeneration
                return styleId;
           }
 
-          // Create a new style with the specified styleid and stylename and add it to the specified style definitions part.
           private static void AddNewStyle(StyleDefinitionsPart styleDefinitionsPart, string styleid, string stylename, StyleRunProperties styleRunProperties)
           {
-               // Get access to the root element of the styles part.
-               DocumentFormat.OpenXml.Wordprocessing.Styles styles = styleDefinitionsPart.Styles;
+               var styles = styleDefinitionsPart.Styles;
 
-               // Create a new paragraph style and specify some of the properties.
-               DocumentFormat.OpenXml.Wordprocessing.Style style = new DocumentFormat.OpenXml.Wordprocessing.Style()
+               var style = new Style()
                {
                     Type = StyleValues.Paragraph,
                     StyleId = styleid,
@@ -187,14 +159,9 @@ namespace CVGenerator.CvGeneration
                style.Append(new NextParagraphStyle() { Val = "Normal" });
                style.Append(new UIPriority() { Val = 900 });
 
-               // Create the StyleRunProperties object and specify some of the run properties.
-
-
-               // Add the run properties to the style.
-               // --- Here we use the OuterXml. If you are using the same var twice, you will get an error. So to be sure just insert the xml and you will get through the error.
+               
                style.Append(styleRunProperties);
 
-               // Add the style to the styles part.
                styles.Append(style);
           }
      }
