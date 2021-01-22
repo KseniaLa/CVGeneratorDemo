@@ -8,7 +8,7 @@ namespace CVGenerator.CvGeneration
 {
      public static class CvGenerator
      {
-          public static byte[] GenerateCvBytes(StyleConfig docStyle, CvModel cvModel)
+          public static byte[] GenerateCvBytes(StyleConfig docStyle, CvInfoModel cvModel)
           {
                var textItems = new List<TextItem>();
 

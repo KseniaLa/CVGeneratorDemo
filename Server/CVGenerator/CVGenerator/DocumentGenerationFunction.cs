@@ -20,6 +20,8 @@ namespace CVGenerator
 {
      public static class DocumentGenerationFunction
      {
+          private static readonly string _cvFileName = "CV.docx";
+
           private static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
           {
                NullValueHandling = NullValueHandling.Ignore,
@@ -38,27 +40,67 @@ namespace CVGenerator
                {
                     var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
-                    var cvModel = JsonConvert.DeserializeObject<CvModel>(requestBody, Settings);
+                    var cvRequestModel = JsonConvert.DeserializeObject<CvRequestModel>(requestBody, Settings);
 
-                    var styles = DocStylesStorage.DocStyles;
+                    var styleId = cvRequestModel.StyleId;
+                    var cvInfo = cvRequestModel.CvInfo;
 
-                    var currStyle = styles.FirstOrDefault(s => s.Id == 1);
-
-                    var cv = CvGenerator.GenerateCvBytes(currStyle.Style, cvModel);
-
-                    return new FileContentResult(cv, "application/octet-stream")
+                    var errorItem = ValidateCvRequest(styleId, cvInfo);
+                    if (errorItem != null)
                     {
-                         FileDownloadName = "file.docx"
+                         return new BadRequestObjectResult(errorItem);
+                    }
+
+                    var fileBytes = GenerateCvFileBytes(styleId, cvInfo);
+
+                    return new FileContentResult(fileBytes, "application/octet-stream")
+                    {
+                         FileDownloadName = _cvFileName
                     };
                }
                catch (Exception ex)
                {
                     log.LogError(ex.ToString());
-                    return new FileContentResult(new byte[] { }, "application/octet-stream")
+                    return new BadRequestObjectResult(new ErrorItem
                     {
-                         FileDownloadName = "file.docx"
-                    };
+                         ErrorMessage = $"Fata error occurred: {ex.Message}"
+                    });
                }
+          }
+
+          private static ErrorItem ValidateCvRequest(int styleId, CvInfoModel cvInfo)
+          {
+               if (styleId <= 0)
+               {
+                    return new ErrorItem { ErrorMessage = "Invalid CV style Id" };
+               }
+
+               if (cvInfo == null)
+               {
+                    return new ErrorItem { ErrorMessage = "Empty CV info object" };
+               }
+
+               if (string.IsNullOrEmpty(cvInfo.FirstName) || string.IsNullOrEmpty(cvInfo.LastName))
+               {
+                    return new ErrorItem { ErrorMessage = "CV info should have first and last names" };
+               }
+
+               return null;
+          }
+
+          private static byte[] GenerateCvFileBytes(int styleId, CvInfoModel cvInfo)
+          {
+               var styles = DocStylesStorage.DocStyles;
+               var currStyle = styles.FirstOrDefault(s => s.Id == styleId);
+
+               if (currStyle == null)
+               {
+                    currStyle = styles.First();
+               }
+
+               var cv = CvGenerator.GenerateCvBytes(currStyle.Style, cvInfo);
+
+               return cv;
           }
      }
 }

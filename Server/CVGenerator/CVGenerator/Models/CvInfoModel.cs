@@ -5,7 +5,7 @@ using System.Text;
 
 namespace CVGenerator.Models
 {
-     public class CvModel
+     public class CvInfoModel
      {
           [JsonProperty("firstName")]
           public string FirstName { get; set; }

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using CVGenerator.DocumentStylesConfiguration;
 using System.Collections.Generic;
+using CVGenerator.Models;
 
 namespace CVGenerator
 {
@@ -30,8 +31,10 @@ namespace CVGenerator
                catch (Exception ex)
                {
                     log.LogError($"Fatal error occurred: {ex}");
-
-                    return new BadRequestObjectResult(ex.Message);
+                    return new BadRequestObjectResult(new ErrorItem
+                    {
+                         ErrorMessage = $"Fata error occurred: {ex.Message}"
+                    });
                }
                finally
                {
