@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <AppHeader v-bind:isDemo="isBadge" />
+    <AppHeader />
     <router-view />
   </div>
 </template>
