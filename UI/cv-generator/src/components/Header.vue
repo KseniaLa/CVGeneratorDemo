@@ -15,7 +15,8 @@ export default {
 <style lang="scss">
 
 .app-header {
-  padding: 10px;
+  padding: 5px;
+	padding-left: 15px;
   background-color: #3298dc;
   color: #ffffff;
 	box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;

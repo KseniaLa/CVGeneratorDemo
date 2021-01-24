@@ -23,6 +23,38 @@ namespace CVGenerator.CvGeneration
                     });
                }
 
+               if (cvModel.Email != null)
+               {
+                    textItems.Add(new TextItem
+                    {
+                         Text = cvModel.Email,
+                         FontSize = docStyle.TextFontSize,
+                         IsHeading = false,
+                         IsBold = true
+                    });
+               }
+
+               if (cvModel.DateOfBirth != null)
+               {
+                    textItems.Add(new TextItem
+                    {
+                         Text = "Date of Birth",
+                         FontSize = docStyle.HeadingFontSize,
+                         IsBold = true,
+                         IsHeading = true,
+                         IsStyledHeading = docStyle.IsStyledHeading
+                    });
+
+                    textItems.Add(new TextItem
+                    {
+                         Text = cvModel.DateOfBirth.ToString("MM/dd/yyyy"),
+                         FontSize = docStyle.TextFontSize,
+                         IsBold = false,
+                         IsHeading = false,
+                         IsStyledHeading = false
+                    });
+               }
+
                if (cvModel.Education != null)
                {
                     textItems.Add(new TextItem

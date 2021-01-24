@@ -7,10 +7,6 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using SelectPdf;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Wordprocessing;
 using System.Linq;
 using CVGenerator.Models;
 using CVGenerator.DocumentStylesConfiguration;
@@ -34,10 +30,10 @@ namespace CVGenerator
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req,
             ILogger log)
           {
-               log.LogInformation("C# HTTP trigger function processed a request.");
-
                try
                {
+                    log.LogInformation("Start DocumentGenerationFunction execution");
+
                     var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
                     var cvRequestModel = JsonConvert.DeserializeObject<CvRequestModel>(requestBody, Settings);
@@ -48,6 +44,7 @@ namespace CVGenerator
                     var errorItem = ValidateCvRequest(styleId, cvInfo);
                     if (errorItem != null)
                     {
+                         log.LogWarning($"Invalid CV request object: {errorItem.ErrorMessage}");
                          return new BadRequestObjectResult(errorItem);
                     }
 
@@ -63,14 +60,18 @@ namespace CVGenerator
                     log.LogError(ex.ToString());
                     return new BadRequestObjectResult(new ErrorItem
                     {
-                         ErrorMessage = $"Fata error occurred: {ex.Message}"
+                         ErrorMessage = $"Fatal error occurred: {ex.Message}"
                     });
+               }
+               finally
+               {
+                    log.LogInformation("Finish DocumentGenerationFunction execution");
                }
           }
 
           private static ErrorItem ValidateCvRequest(int styleId, CvInfoModel cvInfo)
           {
-               if (styleId <= 0)
+               if (styleId < 0)
                {
                     return new ErrorItem { ErrorMessage = "Invalid CV style Id" };
                }
